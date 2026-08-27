@@ -2,7 +2,7 @@
 
 작성일: 2026-08-27
 상태: 대화에서 승인됨
-프로젝트: `/Users/seungwoo/dev/coding/my-socket`
+프로젝트: `/Users/seungwoo/dev/coding/socket-learn`
 
 ## 목적
 
@@ -38,7 +38,7 @@ TCP의 동작을 이해하기 위해 Node.js `node:net` 위에 TypeScript로 작
 ## 프로젝트 구조
 
 ```text
-my-socket/
+socket-learn/
 ├── lessons/
 │   ├── 01-raw-stream/
 │   ├── 02-message-boundary/
