@@ -13,7 +13,9 @@
     "lesson:01:server": "tsx lessons/01-raw-stream/server.ts",
     "lesson:01:client": "tsx lessons/01-raw-stream/client.ts",
     "lesson:02:server": "tsx lessons/02-message-boundary/server.ts",
-    "lesson:02:client": "tsx lessons/02-message-boundary/client.ts"
+    "lesson:02:client": "tsx lessons/02-message-boundary/client.ts",
+    "lesson:03:server": "tsx lessons/03-length-prefixed-protocol/server.ts",
+    "lesson:03:client": "tsx lessons/03-length-prefixed-protocol/client.ts"
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
