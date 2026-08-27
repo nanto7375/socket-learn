@@ -1,4 +1,3 @@
-import { once } from "node:events";
 import net from "node:net";
 
 import { FrameDecoder } from "../../src/protocol/frame.js";
@@ -36,23 +35,35 @@ export async function connectChatClient(port: number): Promise<TestChatClient> {
   const decoder = new FrameDecoder();
   const received: ServerMessage[] = [];
   const waiting: WaitingMessage[] = [];
-  const closedPromise = once(socket, "close").then(() => undefined);
+  let closed = false;
+  let resolveClosed: () => void = () => undefined;
+  const closedPromise = new Promise<void>((resolve) => {
+    resolveClosed = resolve;
+  });
   let closing = false;
 
   socket.on("error", () => undefined);
+  socket.on("close", () => {
+    closed = true;
+    resolveClosed();
+  });
   socket.on("data", (chunk: Buffer) => {
     for (const payload of decoder.push(chunk)) {
       const message = parseServerMessage(payload);
-      const index = waiting.findIndex((candidate) => candidate.type === message.type);
-      if (index < 0) {
+      const candidate = waiting.shift();
+      if (!candidate) {
         received.push(message);
         continue;
       }
-
-      const [candidate] = waiting.splice(index, 1);
-      if (candidate) {
-        clearTimeout(candidate.timeout);
+      clearTimeout(candidate.timeout);
+      if (candidate.type === message.type) {
         candidate.resolve(message);
+      } else {
+        candidate.reject(
+          new Error(
+            `다음 메시지는 ${message.type}이지만 ${candidate.type}을 기다렸습니다. 수신 메시지: ${JSON.stringify(message)}`,
+          ),
+        );
       }
     }
   });
@@ -78,15 +89,23 @@ export async function connectChatClient(port: number): Promise<TestChatClient> {
       socket.write(frame);
     },
     nextMessage(type) {
-      const index = received.findIndex((message) => message.type === type);
-      if (index >= 0) {
-        const [message] = received.splice(index, 1);
-        return Promise.resolve(message as MessageOfType<typeof type>);
+      const message = received.shift();
+      if (message) {
+        if (message.type === type) {
+          return Promise.resolve(message as MessageOfType<typeof type>);
+        }
+        return Promise.reject(
+          new Error(
+            `다음 메시지는 ${message.type}이지만 ${type}을 기다렸습니다. 수신 메시지: ${JSON.stringify(message)}`,
+          ),
+        );
       }
 
       return new Promise<MessageOfType<typeof type>>((resolve, reject) => {
         const timeout = setTimeout(() => {
-          const index = waiting.findIndex((candidate) => candidate.timeout === timeout);
+          const index = waiting.findIndex(
+            (candidate) => candidate.timeout === timeout,
+          );
           if (index >= 0) waiting.splice(index, 1);
           reject(
             new Error(
@@ -106,10 +125,10 @@ export async function connectChatClient(port: number): Promise<TestChatClient> {
       return closedPromise;
     },
     async close() {
-      if (socket.destroyed) return;
+      if (closed) return;
       if (!closing) {
         closing = true;
-        socket.end();
+        if (!socket.destroyed) socket.end();
       }
       await closedPromise;
     },
