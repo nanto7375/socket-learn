@@ -1,41 +1,41 @@
-# TCP Learning Socket Design
+# TCP 학습용 소켓 설계
 
-Date: 2026-08-27
-Status: Approved in conversation
-Project: `/Users/seungwoo/dev/coding/my-socket`
+작성일: 2026-08-27
+상태: 대화에서 승인됨
+프로젝트: `/Users/seungwoo/dev/coding/my-socket`
 
-## Purpose
+## 목적
 
-Build a small TypeScript CLI chat system on top of Node.js `node:net` to learn how TCP behaves. The project is an observation-first course, not a production socket library. Each lesson first exposes one TCP property, then introduces only enough code to handle that property.
+TCP의 동작을 이해하기 위해 Node.js `node:net` 위에 TypeScript로 작은 CLI 채팅 시스템을 만든다. 이 프로젝트의 중심은 운영 환경에서 사용할 소켓 라이브러리가 아니라, 현상을 먼저 관찰하는 단계별 학습이다. 각 실습은 TCP의 특성 하나를 먼저 드러내고, 그 특성을 다루는 데 필요한 코드만 다음 단계에서 추가한다.
 
-## Goals
+## 목표
 
-- Observe that TCP is a byte stream without application-message boundaries.
-- Reproduce data arriving as partial frames or multiple frames in one chunk.
-- Design and implement a length-prefixed application protocol.
-- Build a multi-client CLI chat using that protocol.
-- Observe backpressure through `socket.write()` and `drain`.
-- Compare graceful close, abrupt close, and half-close behavior.
-- Make every lesson independently runnable and explained in the root README.
-- Verify framing with deterministic tests and chat behavior over real localhost TCP connections.
+- TCP가 애플리케이션 메시지 경계가 없는 바이트 스트림임을 관찰한다.
+- 데이터가 프레임 일부로 나뉘거나 여러 프레임이 한 chunk로 합쳐져 도착하는 상황을 재현한다.
+- 길이 헤더 기반의 애플리케이션 프로토콜을 설계하고 구현한다.
+- 해당 프로토콜로 여러 클라이언트가 참여하는 CLI 채팅을 만든다.
+- `socket.write()`와 `drain`을 통해 backpressure를 관찰한다.
+- 정상 종료, 강제 종료, half-close의 동작을 비교한다.
+- 모든 실습을 독립적으로 실행할 수 있게 하고, 루트 README에서 각 단계를 설명한다.
+- 결정적인 단위 테스트로 프레이밍을 검증하고, 실제 localhost TCP 연결로 채팅 동작을 검증한다.
 
-## Non-goals
+## 범위에서 제외하는 것
 
-- Authentication or authorization
-- Browser or graphical UI
-- Database persistence or chat history
-- Encryption or a TLS implementation
-- Automatic reconnection, clustering, or production deployment
-- Reimplementing the operating system `socket()` syscall
-- A production-grade slow-client policy
+- 인증과 인가
+- 브라우저 또는 그래픽 UI
+- 데이터베이스 저장과 채팅 기록
+- 암호화 또는 TLS 자체 구현
+- 자동 재연결, 클러스터링, 운영 배포
+- 운영체제의 `socket()` 시스템 호출 재구현
+- 운영 수준의 느린 클라이언트 처리 정책
 
-## Technical Boundary
+## 기술적 경계
 
-Node.js `node:net` owns the operating-system TCP socket. Project code owns the application layer above it: frame encoding, incremental frame decoding, message validation, connection state, and chat behavior. TypeScript is used throughout.
+운영체제 TCP 소켓은 Node.js `node:net`이 담당한다. 프로젝트 코드는 그 위의 애플리케이션 계층인 프레임 인코딩, 점진적 프레임 디코딩, 메시지 검증, 연결 상태, 채팅 동작을 담당한다. 모든 코드는 TypeScript로 작성한다.
 
-Runtime dependencies are avoided. Development dependencies are limited to TypeScript, Node type definitions, and `tsx`. Tests use the Node.js built-in `node:test` runner.
+런타임 의존성은 두지 않는다. 개발 의존성은 TypeScript, Node.js 타입 정의, `tsx`로 제한한다. 테스트 러너는 Node.js 내장 `node:test`를 사용한다.
 
-## Project Structure
+## 프로젝트 구조
 
 ```text
 my-socket/
@@ -55,61 +55,61 @@ my-socket/
 └── README.md
 ```
 
-Lessons 01 and 02 intentionally contain small, local code that exposes a problem. Reusable protocol code appears only in lesson 03, under `src/protocol`, after the need for it has been demonstrated. Later lessons import that code instead of duplicating it.
+실습 01과 02에는 문제를 드러내기 위한 작고 독립적인 코드를 둔다. 재사용 가능한 프로토콜 코드는 필요성이 확인된 뒤인 실습 03에서 `src/protocol` 아래에 처음 도입한다. 이후 실습은 이 코드를 복제하지 않고 가져와 사용한다.
 
-## Learning Sequence
+## 학습 순서
 
-### 01 - Raw stream
+### 01 - 원시 스트림
 
-Run a TCP server and one CLI client. Log connection metadata and the size, hexadecimal representation, and UTF-8 view of every `data` chunk. This establishes that the API exposes bytes delivered over a connection, not chat messages.
+TCP 서버와 CLI 클라이언트 하나를 실행한다. 연결 정보와 모든 `data` chunk의 바이트 길이, 16진수 표현, UTF-8 표현을 로그로 출력한다. 이를 통해 API가 채팅 메시지가 아니라 연결을 통해 전달된 바이트를 제공한다는 사실을 확인한다.
 
-### 02 - Message boundary
+### 02 - 메시지 경계
 
-Send several logical messages using different write sizes and timing. Demonstrate that calls to `write()` do not define boundaries for the receiver. Natural chunking is nondeterministic, so the lesson must not promise identical logs on every run. Deterministic examples separately feed split and combined chunks to a deliberately naive parser.
+논리적으로 구분된 여러 메시지를 서로 다른 쓰기 크기와 간격으로 전송한다. 송신 측의 `write()` 호출 단위가 수신 측의 메시지 경계를 정의하지 않는다는 사실을 확인한다. 실제 chunk 분할 방식은 실행할 때마다 달라질 수 있으므로 매번 동일한 로그가 나온다고 약속하지 않는다. 별도의 결정적 예제에서는 의도적으로 나누거나 합친 chunk를 단순한 파서에 전달해 문제를 확실하게 재현한다.
 
-### 03 - Length-prefixed protocol
+### 03 - 길이 헤더 프로토콜
 
-Introduce a four-byte length header, a frame encoder, and an incremental decoder. Show the decoder retaining an incomplete frame and extracting multiple complete frames in a loop.
+4바이트 길이 헤더, 프레임 인코더, 점진적 디코더를 도입한다. 디코더가 완성되지 않은 프레임은 내부에 보관하고, 완성된 프레임이 여러 개 있으면 반복해서 추출하는 과정을 보여준다.
 
-### 04 - CLI chat
+### 04 - CLI 채팅
 
-Build a server that tracks joined connections and broadcasts chat messages. Build a terminal client that reads lines from standard input. Keep connection state per client so a malformed or disconnected peer cannot terminate the server or corrupt another peer's state.
+참여가 완료된 연결을 관리하고 채팅 메시지를 브로드캐스트하는 서버를 만든다. 표준 입력에서 한 줄씩 읽는 터미널 클라이언트도 만든다. 연결별 상태를 분리해 잘못된 데이터를 보내거나 연결이 끊긴 클라이언트가 서버 또는 다른 클라이언트의 상태에 영향을 주지 않게 한다.
 
 ### 05 - Backpressure
 
-Use a fast producer and intentionally slow consumer. Log the return value of `socket.write()`, pause production when it returns `false`, and resume on `drain`. Clarify that `false` means the user-space write buffer reached its threshold; it does not mean the bytes were rejected or delivered to the peer.
+빠른 생산자와 의도적으로 느린 소비자를 사용한다. `socket.write()`의 반환값을 기록하고, 반환값이 `false`이면 데이터 생성을 멈춘 뒤 `drain` 이벤트가 발생하면 재개한다. `false`는 사용자 영역의 쓰기 버퍼가 임계치에 도달했다는 뜻이며, 바이트가 거부되었거나 상대에게 전달되었다는 뜻이 아님을 설명한다.
 
-### 06 - Connection close
+### 06 - 연결 종료
 
-Log `data`, `end`, `finish`, `close`, and `error` with monotonic sequence numbers. Compare graceful `end()`, forced local teardown, and `allowHalfOpen` behavior. Include optional packet-capture instructions for observing connection establishment and FIN exchange, without making Wireshark a prerequisite.
+`data`, `end`, `finish`, `close`, `error` 이벤트를 단조 증가하는 순번과 함께 기록한다. 정상적인 `end()`, 로컬 강제 종료, `allowHalfOpen` 동작을 비교한다. Wireshark를 필수 조건으로 만들지는 않지만, 연결 수립과 FIN 교환을 관찰할 수 있는 선택적 패킷 캡처 방법을 포함한다.
 
-## Wire Protocol
+## 와이어 프로토콜
 
-Each frame has this shape:
+각 프레임의 형태는 다음과 같다.
 
 ```text
 +----------------------------+------------------------------+
-| 4-byte unsigned big-endian | UTF-8 JSON payload           |
-| payload byte length        | exactly the declared length  |
+| 4바이트 unsigned big-endian | UTF-8 JSON payload           |
+| payload 바이트 길이         | 선언된 길이와 정확히 같음      |
 +----------------------------+------------------------------+
 ```
 
-Rules:
+규칙:
 
-- The header describes bytes, not JavaScript string characters.
-- Valid payload length is 1 through 65,536 bytes.
-- The encoder calculates length from the encoded `Buffer`.
-- The decoder waits until at least four header bytes are buffered.
-- It rejects an invalid length before waiting for or allocating its payload.
-- It emits frames only when all declared payload bytes are buffered.
-- It continues parsing until no complete frame remains.
-- Any remaining partial header or payload stays buffered for the next chunk.
+- 헤더는 JavaScript 문자열 길이가 아니라 바이트 길이를 나타낸다.
+- 유효한 payload 길이는 1바이트 이상 65,536바이트 이하이다.
+- 인코더는 UTF-8로 인코딩된 `Buffer`를 기준으로 길이를 계산한다.
+- 디코더는 헤더 4바이트가 모일 때까지 기다린다.
+- 잘못된 길이는 payload를 기다리거나 해당 크기만큼 할당하기 전에 거부한다.
+- 선언된 payload 바이트가 모두 모였을 때만 프레임을 내보낸다.
+- 완성된 프레임이 더 없을 때까지 반복해서 파싱한다.
+- 완성되지 않은 헤더나 payload는 다음 chunk가 올 때까지 내부 버퍼에 보관한다.
 
-JSON keeps serialization readable so the exercises stay focused on TCP framing. It is not presented as the most compact wire format.
+직렬화보다 TCP 프레이밍에 집중할 수 있도록 JSON을 사용한다. JSON이 가장 작은 와이어 형식이라고 설명하지는 않는다.
 
-## Message Contract
+## 메시지 계약
 
-Client-to-server messages:
+클라이언트에서 서버로 보내는 메시지:
 
 ```ts
 type ClientMessage =
@@ -117,7 +117,7 @@ type ClientMessage =
   | { type: "chat"; text: string };
 ```
 
-Server-to-client messages:
+서버에서 클라이언트로 보내는 메시지:
 
 ```ts
 type ServerMessage =
@@ -130,83 +130,83 @@ type ServerMessage =
     };
 ```
 
-Names and chat text must be non-empty strings after trimming. A client may join once; a second `join` is `INVALID_MESSAGE` and closes that connection. A `chat` message before `join`, an unknown message type, or a structurally invalid JSON value is a protocol error.
+이름과 채팅 내용은 앞뒤 공백을 제거한 뒤에도 비어 있지 않아야 한다. 한 클라이언트는 한 번만 참여할 수 있으며, 두 번째 `join`은 `INVALID_MESSAGE`로 처리하고 해당 연결을 종료한다. `join` 전에 보낸 `chat`, 알 수 없는 메시지 타입, 구조가 올바르지 않은 JSON 값은 프로토콜 오류이다.
 
-## Data Flow
+## 데이터 흐름
 
-Sending:
-
-```text
-CLI line -> typed message -> JSON -> UTF-8 Buffer
-         -> 4-byte length header + payload -> socket.write()
-```
-
-Receiving:
+송신:
 
 ```text
-TCP data chunk -> decoder accumulation -> zero or more complete frames
-               -> JSON parse -> runtime validation -> connection action
+CLI 한 줄 -> 타입이 지정된 메시지 -> JSON -> UTF-8 Buffer
+          -> 4바이트 길이 헤더 + payload -> socket.write()
 ```
 
-The chat server broadcasts a newly encoded server message to all joined clients. TCP preserves byte order within each connection, but ordering between different clients is defined only by the order in which the server handles their messages.
+수신:
+
+```text
+TCP data chunk -> 디코더 누적 -> 0개 이상의 완성된 프레임
+               -> JSON 파싱 -> 런타임 검증 -> 연결별 동작
+```
+
+채팅 서버는 새 서버 메시지를 인코딩해 참여가 완료된 모든 클라이언트에 브로드캐스트한다. TCP는 각 연결 안에서 바이트 순서를 보존하지만, 서로 다른 클라이언트가 보낸 메시지 사이의 순서는 서버가 메시지를 처리한 순서로만 정의한다.
 
 ## Backpressure
 
-The protocol encoder returns a `Buffer`; it does not hide `socket.write()`. This keeps the write result observable. Lesson 05 owns the full pause-and-`drain` loop. The chat lesson logs backpressure if encountered but deliberately does not grow into a production slow-consumer queueing system.
+프로토콜 인코더는 `Buffer`를 반환하며 `socket.write()`를 내부에 숨기지 않는다. 이를 통해 쓰기 결과를 직접 관찰할 수 있다. 생산 중지와 `drain` 대기를 포함한 전체 흐름은 실습 05에서 다룬다. 채팅 실습에서는 backpressure가 발생하면 이를 로그로 남기지만, 운영 수준의 느린 소비자 큐 시스템으로 확장하지 않는다.
 
-The README explains that a robust production chat server would need a bounded per-client queue or a disconnect policy. That policy remains out of scope.
+운영 환경의 채팅 서버에는 클라이언트별 크기 제한 큐 또는 연결 종료 정책이 필요하다는 점을 README에 설명하되, 해당 정책의 구현은 범위에서 제외한다.
 
-## Error Handling
+## 오류 처리
 
-- Invalid declared length: send `INVALID_FRAME` when the connection is still writable, then end that connection.
-- Invalid JSON or message shape: send `INVALID_MESSAGE`, then end that connection.
-- Chat before join: send `NOT_JOINED` and keep the connection open so the client can join correctly.
-- Socket I/O error: log it with the connection identifier and tear down only that connection.
-- Client disconnect: remove it from the joined-client registry exactly once.
-- Server startup error: report the port and error, then exit non-zero.
+- 선언된 길이가 잘못됨: 연결에 쓰기가 가능하면 `INVALID_FRAME`을 보낸 뒤 해당 연결을 종료한다.
+- JSON 또는 메시지 구조가 잘못됨: `INVALID_MESSAGE`를 보낸 뒤 해당 연결을 종료한다.
+- 참여 전 채팅: `NOT_JOINED`를 보내고, 클라이언트가 올바르게 참여할 수 있도록 연결은 유지한다.
+- 소켓 입출력 오류: 연결 식별자와 함께 기록하고 해당 연결만 정리한다.
+- 클라이언트 연결 종료: 참여 클라이언트 목록에서 정확히 한 번 제거한다.
+- 서버 시작 오류: 포트와 오류를 출력한 뒤 0이 아닌 종료 코드로 끝낸다.
 
-No parser or event callback may allow malformed peer input to become an uncaught exception that exits the server.
+파서나 이벤트 콜백은 잘못된 상대의 입력을 서버 프로세스를 종료시키는 미처리 예외로 전파해서는 안 된다.
 
-## Observability
+## 관찰용 로그
 
-Lesson logs include a connection identifier and a monotonically increasing event sequence number. The raw-stream and connection-close lessons also include chunk byte length. Backpressure logs include the `write()` result and the corresponding `drain` event.
+실습 로그에는 연결 식별자와 단조 증가하는 이벤트 순번을 포함한다. 원시 스트림과 연결 종료 실습에는 chunk의 바이트 길이도 기록한다. Backpressure 로그에는 `write()` 반환값과 그에 대응하는 `drain` 이벤트를 기록한다.
 
-The README distinguishes observations guaranteed by TCP from incidental chunk sizes produced by one operating-system run.
+README에서는 TCP가 보장하는 동작과 특정 운영체제에서 한 번 실행했을 때 우연히 나타난 chunk 크기를 구분한다.
 
-## Testing
+## 테스트
 
-### Frame unit tests
+### 프레임 단위 테스트
 
-- Header split after each of its first three bytes
-- Payload split at every possible byte boundary
-- Several complete frames delivered in one chunk
-- Complete frames followed by an incomplete frame
-- Empty and oversized declared lengths
-- Non-ASCII UTF-8 payload length
-- Malformed JSON and structurally invalid messages
+- 헤더의 첫 번째, 두 번째, 세 번째 바이트 뒤에서 각각 나눈 경우
+- payload의 가능한 모든 바이트 경계에서 나눈 경우
+- 완성된 여러 프레임을 한 chunk로 전달한 경우
+- 완성된 프레임 뒤에 미완성 프레임이 이어진 경우
+- 비어 있거나 최대 크기를 초과한 길이
+- ASCII가 아닌 UTF-8 payload의 바이트 길이
+- 잘못된 JSON과 구조가 올바르지 않은 메시지
 
-These cases call the decoder with explicit chunk sequences, making boundary tests deterministic.
+이 테스트들은 디코더에 명시적인 chunk 배열을 전달하므로 경계 조건을 결정적으로 검증한다.
 
-### TCP integration tests
+### TCP 통합 테스트
 
-Use real localhost TCP sockets rather than mocks to verify:
+mock 대신 실제 localhost TCP 소켓을 사용해 다음을 검증한다.
 
-- Two clients can join and exchange a broadcast message.
-- Multiple frames sent together are processed in order.
-- One malformed client is isolated from healthy clients.
-- Disconnect cleanup removes the correct client.
-- The server can shut down without leaving open test handles.
+- 두 클라이언트가 참여하고 브로드캐스트 메시지를 주고받을 수 있다.
+- 여러 프레임을 함께 보내도 순서대로 처리한다.
+- 잘못된 클라이언트 하나가 정상 클라이언트에 영향을 주지 않는다.
+- 연결 종료 시 올바른 클라이언트를 목록에서 제거한다.
+- 서버 종료 후 테스트 프로세스에 열린 handle이 남지 않는다.
 
-### Manual labs
+### 수동 실습
 
-Each lesson has commands, expected observations, and questions to answer. Any observation that depends on OS buffering or timing is labeled nondeterministic rather than asserted as a guaranteed result.
+각 실습에는 실행 명령, 예상할 수 있는 현상, 생각해 볼 질문을 둔다. 운영체제의 버퍼링이나 실행 시점에 따라 달라지는 현상은 보장된 결과가 아니라 비결정적 관찰임을 명시한다.
 
-## Completion Criteria
+## 완료 기준
 
-- All six lessons run from documented commands.
-- The CLI chat supports at least two simultaneous clients.
-- The decoder handles arbitrary valid chunk partitions and concatenations.
-- Type checking and compilation pass.
-- Unit and real-TCP integration tests pass.
-- The README explains what happened, why the next layer was introduced, and which behavior is guaranteed versus merely observed.
-- Optional packet-capture instructions cover handshake and graceful close without being required for automated verification.
+- 문서에 적힌 명령으로 여섯 실습을 모두 실행할 수 있다.
+- CLI 채팅에 두 개 이상의 클라이언트가 동시에 참여할 수 있다.
+- 디코더가 유효한 프레임의 임의 분할과 결합을 처리한다.
+- 타입 검사와 컴파일이 통과한다.
+- 단위 테스트와 실제 TCP 통합 테스트가 통과한다.
+- README가 각 현상, 다음 계층을 도입한 이유, 보장된 동작과 관찰된 동작의 차이를 설명한다.
+- 선택적 패킷 캡처 안내가 연결 수립과 정상 종료를 다루며 자동 검증의 필수 조건은 아니다.
