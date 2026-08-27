@@ -86,4 +86,3 @@ test("서버 error 메시지의 알 수 없는 code를 거부한다", () => {
     MessageDecodeError,
   );
 });
-

@@ -96,4 +96,3 @@ export function parseServerMessage(payload: Buffer): ServerMessage {
   }
   throw new MessageDecodeError("알 수 없는 서버 메시지 type 또는 error code입니다");
 }
-
