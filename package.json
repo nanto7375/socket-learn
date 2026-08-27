@@ -17,7 +17,9 @@
     "lesson:03:server": "tsx lessons/03-length-prefixed-protocol/server.ts",
     "lesson:03:client": "tsx lessons/03-length-prefixed-protocol/client.ts",
     "lesson:04:server": "tsx lessons/04-cli-chat/server.ts",
-    "lesson:04:client": "tsx lessons/04-cli-chat/client.ts"
+    "lesson:04:client": "tsx lessons/04-cli-chat/client.ts",
+    "lesson:05:consumer": "tsx lessons/05-backpressure/consumer.ts",
+    "lesson:05:producer": "tsx lessons/05-backpressure/producer.ts"
   },
   "devDependencies": {
     "@types/node": "^26.4.0",
