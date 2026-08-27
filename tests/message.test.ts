@@ -4,6 +4,8 @@ import { test } from "node:test";
 import { FrameDecoder } from "../src/protocol/frame.js";
 import {
   encodeMessage,
+  MAX_CHAT_TEXT_BYTES,
+  MAX_NAME_BYTES,
   MessageDecodeError,
   parseClientMessage,
   parseServerMessage,
@@ -29,6 +31,76 @@ test("잘못된 JSON, 빈 문자열, 알 수 없는 type을 거부한다", () =>
   for (const payload of invalidPayloads) {
     assert.throws(() => parseClientMessage(payload), MessageDecodeError);
   }
+});
+
+test("JSON 문자열 안의 잘못된 UTF-8 바이트를 대체 문자로 허용하지 않는다", () => {
+  const malformedPayloads = [
+    Buffer.concat([
+      Buffer.from('{"type":"chat","text":"'),
+      Buffer.from([0xff]),
+      Buffer.from('"}'),
+    ]),
+    Buffer.concat([
+      Buffer.from('{"type":"join","name":"'),
+      Buffer.from([0xc3, 0x28]),
+      Buffer.from('"}'),
+    ]),
+  ];
+
+  for (const payload of malformedPayloads) {
+    assert.throws(
+      () => parseClientMessage(payload),
+      (error: unknown) =>
+        error instanceof MessageDecodeError && /UTF-8/.test(error.message),
+    );
+  }
+});
+
+test("trim 이후 이름과 채팅 내용의 UTF-8 바이트 상한을 검증한다", () => {
+  const exactName = `${"가".repeat(84)}abcd`;
+  const exactChatText = `${"가".repeat(2_730)}ab`;
+  assert.equal(Buffer.byteLength(exactName), MAX_NAME_BYTES);
+  assert.equal(Buffer.byteLength(exactChatText), MAX_CHAT_TEXT_BYTES);
+
+  assert.deepEqual(
+    parseClientMessage(
+      Buffer.from(JSON.stringify({ type: "join", name: ` ${exactName} ` })),
+    ),
+    { type: "join", name: exactName },
+  );
+  assert.deepEqual(
+    parseClientMessage(
+      Buffer.from(
+        JSON.stringify({ type: "chat", text: ` ${exactChatText} ` }),
+      ),
+    ),
+    { type: "chat", text: exactChatText },
+  );
+
+  assert.throws(
+    () =>
+      parseClientMessage(
+        Buffer.from(
+          JSON.stringify({ type: "join", name: `${exactName}a` }),
+        ),
+      ),
+    (error: unknown) =>
+      error instanceof MessageDecodeError &&
+      error.message.includes(`name은(는) ${MAX_NAME_BYTES}바이트 이하여야 합니다`),
+  );
+  assert.throws(
+    () =>
+      parseClientMessage(
+        Buffer.from(
+          JSON.stringify({ type: "chat", text: `${exactChatText}a` }),
+        ),
+      ),
+    (error: unknown) =>
+      error instanceof MessageDecodeError &&
+      error.message.includes(
+        `text은(는) ${MAX_CHAT_TEXT_BYTES}바이트 이하여야 합니다`,
+      ),
+  );
 });
 
 test("서버 error 메시지의 code를 검증한다", () => {

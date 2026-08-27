@@ -14,6 +14,17 @@ test("헤더는 UTF-8 문자열 길이가 아닌 payload 바이트 길이를 기
   assert.equal(frame.subarray(4).toString("utf8"), "안녕");
 });
 
+test("1바이트와 정확히 최대 크기인 payload를 프레임으로 왕복한다", () => {
+  for (const length of [1, MAX_PAYLOAD_BYTES]) {
+    const payload = Buffer.alloc(length, 0x61);
+    const frame = encodeFrame(payload);
+
+    assert.equal(frame.readUInt32BE(0), length);
+    assert.equal(frame.length, 4 + length);
+    assert.deepEqual(new FrameDecoder().push(frame), [payload]);
+  }
+});
+
 test("프레임의 모든 가능한 위치에서 나뉘어도 하나로 복원한다", () => {
   const frame = encodeFrame(Buffer.from("hello"));
   for (let split = 1; split < frame.length; split += 1) {

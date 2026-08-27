@@ -45,6 +45,14 @@ export async function connectChatClient(port: number): Promise<TestChatClient> {
   socket.on("error", () => undefined);
   socket.on("close", () => {
     closed = true;
+    for (const candidate of waiting.splice(0)) {
+      clearTimeout(candidate.timeout);
+      candidate.reject(
+        new Error(
+          `연결이 닫혀 ${candidate.type} 메시지를 받을 수 없습니다.`,
+        ),
+      );
+    }
     resolveClosed();
   });
   socket.on("data", (chunk: Buffer) => {

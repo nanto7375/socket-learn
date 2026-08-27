@@ -1,5 +1,8 @@
 import { encodeFrame } from "./frame.js";
 
+export const MAX_NAME_BYTES = 256;
+export const MAX_CHAT_TEXT_BYTES = 8_192;
+
 export type ProtocolErrorCode =
   | "INVALID_FRAME"
   | "INVALID_MESSAGE"
@@ -21,9 +24,17 @@ export class MessageDecodeError extends Error {
   }
 }
 
+const utf8Decoder = new TextDecoder("utf-8", { fatal: true });
+
 function parseJson(payload: Buffer): unknown {
+  let text: string;
   try {
-    return JSON.parse(payload.toString("utf8"));
+    text = utf8Decoder.decode(payload);
+  } catch {
+    throw new MessageDecodeError("payload는 올바른 UTF-8이어야 합니다");
+  }
+  try {
+    return JSON.parse(text);
   } catch {
     throw new MessageDecodeError("payload는 올바른 JSON이어야 합니다");
   }
@@ -33,11 +44,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function readText(value: unknown, field: string): string {
+function readText(value: unknown, field: string, maxBytes?: number): string {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new MessageDecodeError(`${field}은(는) 비어 있지 않은 문자열이어야 합니다`);
   }
-  return value.trim();
+  const text = value.trim();
+  if (maxBytes !== undefined && Buffer.byteLength(text, "utf8") > maxBytes) {
+    throw new MessageDecodeError(`${field}은(는) ${maxBytes}바이트 이하여야 합니다`);
+  }
+  return text;
 }
 
 export function encodeMessage(
@@ -57,10 +72,16 @@ function parseObject(payload: Buffer): Record<string, unknown> {
 export function parseClientMessage(payload: Buffer): ClientMessage {
   const value = parseObject(payload);
   if (value.type === "join") {
-    return { type: "join", name: readText(value.name, "name") };
+    return {
+      type: "join",
+      name: readText(value.name, "name", MAX_NAME_BYTES),
+    };
   }
   if (value.type === "chat") {
-    return { type: "chat", text: readText(value.text, "text") };
+    return {
+      type: "chat",
+      text: readText(value.text, "text", MAX_CHAT_TEXT_BYTES),
+    };
   }
   throw new MessageDecodeError("알 수 없는 클라이언트 메시지 type입니다");
 }

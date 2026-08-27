@@ -8,7 +8,6 @@ import {
   parseClientMessage,
   type ClientMessage,
   type ProtocolErrorCode,
-  type ServerMessage,
 } from "../../src/protocol/message.js";
 
 export interface ChatServerOptions {
@@ -60,19 +59,19 @@ export async function startChatServer(
     logConnection(state, "연결 정리");
   };
 
-  const send = (
+  const sendFrame = (
     socket: Socket,
     state: ClientState,
-    message: ServerMessage,
+    frame: Buffer,
   ): void => {
     if (socket.destroyed || socket.writableEnded) return;
-    const writable = socket.write(encodeMessage(message));
+    const writable = socket.write(frame);
     if (!writable) logConnection(state, "전송 지연(backpressure)");
   };
 
-  const broadcast = (message: ServerMessage): void => {
+  const broadcastFrame = (frame: Buffer): void => {
     for (const [socket, state] of clients) {
-      if (state.name !== undefined) send(socket, state, message);
+      if (state.name !== undefined) sendFrame(socket, state, frame);
     }
   };
 
@@ -82,7 +81,7 @@ export async function startChatServer(
     code: ProtocolErrorCode,
     message: string,
   ): void => {
-    send(socket, state, { type: "error", code, message });
+    sendFrame(socket, state, encodeMessage({ type: "error", code, message }));
   };
 
   const handleMessage = (
@@ -98,8 +97,12 @@ export async function startChatServer(
         socket.end();
         return;
       }
+      const joinedFrame = encodeMessage({
+        type: "system",
+        text: `${message.name}님이 참여했습니다.`,
+      });
       state.name = message.name;
-      broadcast({ type: "system", text: `${message.name}님이 참여했습니다.` });
+      broadcastFrame(joinedFrame);
       return;
     }
 
@@ -108,7 +111,12 @@ export async function startChatServer(
       return;
     }
 
-    broadcast({ type: "chat", from: state.name, text: message.text });
+    const chatFrame = encodeMessage({
+      type: "chat",
+      from: state.name,
+      text: message.text,
+    });
+    broadcastFrame(chatFrame);
   };
 
   const server = createServer((socket) => {
