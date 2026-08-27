@@ -77,7 +77,7 @@ socket-learn/
 
 ---
 
-### 작업 1: 프로젝트 기반과 원시 TCP 스트림
+### Task 1: 프로젝트 기반과 원시 TCP 스트림
 
 **파일:**
 - 생성: `.gitignore`
@@ -334,7 +334,7 @@ git commit -m "feat: add raw TCP stream lesson"
 
 ---
 
-### 작업 2: 메시지 경계 문제 재현
+### Task 2: 메시지 경계 문제 재현
 
 **파일:**
 - 생성: `lessons/02-message-boundary/boundary.ts`
@@ -444,7 +444,7 @@ git commit -m "feat: demonstrate missing TCP message boundaries"
 
 ---
 
-### 작업 3: 길이 헤더 프레임 인코더와 점진적 디코더
+### Task 3: 길이 헤더 프레임 인코더와 점진적 디코더
 
 **파일:**
 - 생성: `src/protocol/frame.ts`
@@ -627,7 +627,7 @@ git commit -m "feat: add length-prefixed frame protocol"
 
 ---
 
-### 작업 4: JSON 메시지 계약과 런타임 검증
+### Task 4: JSON 메시지 계약과 런타임 검증
 
 **파일:**
 - 생성: `src/protocol/message.ts`
@@ -826,7 +826,7 @@ git commit -m "feat: validate framed chat messages"
 
 ---
 
-### 작업 5: 여러 클라이언트 CLI 채팅
+### Task 5: 여러 클라이언트 CLI 채팅
 
 **파일:**
 - 생성: `tests/helpers/chat-client.ts`
@@ -1090,7 +1090,7 @@ git commit -m "feat: add framed multi-client CLI chat"
 
 ---
 
-### 작업 6: Backpressure 관찰
+### Task 6: Backpressure 관찰
 
 **파일:**
 - 생성: `lessons/05-backpressure/flow.ts`
@@ -1213,7 +1213,7 @@ git commit -m "feat: demonstrate TCP write backpressure"
 
 ---
 
-### 작업 7: 정상 종료와 half-close 관찰
+### Task 7: 정상 종료와 half-close 관찰
 
 **파일:**
 - 생성: `lessons/06-connection-close/event-log.ts`
@@ -1374,7 +1374,7 @@ git commit -m "feat: demonstrate TCP connection shutdown"
 
 ---
 
-### 작업 8: 한글 학습 안내와 최종 검증
+### Task 8: 한글 학습 안내와 최종 검증
 
 **파일:**
 - 생성: `README.md`

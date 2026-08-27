@@ -1,0 +1,31 @@
+{
+  "name": "socket-learn",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "tsx --test tests/**/*.test.ts",
+    "lesson:01:server": "tsx lessons/01-raw-stream/server.ts",
+    "lesson:01:client": "tsx lessons/01-raw-stream/client.ts",
+    "lesson:02:server": "tsx lessons/02-message-boundary/server.ts",
+    "lesson:02:client": "tsx lessons/02-message-boundary/client.ts",
+    "lesson:03:server": "tsx lessons/03-length-prefixed-protocol/server.ts",
+    "lesson:03:client": "tsx lessons/03-length-prefixed-protocol/client.ts",
+    "lesson:04:server": "tsx lessons/04-cli-chat/server.ts",
+    "lesson:04:client": "tsx lessons/04-cli-chat/client.ts",
+    "lesson:05:consumer": "tsx lessons/05-backpressure/consumer.ts",
+    "lesson:05:producer": "tsx lessons/05-backpressure/producer.ts",
+    "lesson:06:server": "tsx lessons/06-connection-close/server.ts",
+    "lesson:06:client": "tsx lessons/06-connection-close/client.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.4.0",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
+  }
+}
