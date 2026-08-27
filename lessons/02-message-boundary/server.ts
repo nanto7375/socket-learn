@@ -13,15 +13,15 @@ const server = createServer((socket) => {
     console.log(`[connection:${connectionId} #${sequence}] ${message}`);
   };
 
-  log(`connect ${socket.remoteAddress}:${socket.remotePort}`);
+  log(`연결됨 ${socket.remoteAddress}:${socket.remotePort}`);
   socket.on("data", (chunk) => {
     messageNumber += 1;
     const text = chunk.toString("utf8");
-    log(`message#${messageNumber} bytes=${chunk.length} text=${JSON.stringify(text)}`);
+    log(`수신 message#${messageNumber} bytes=${chunk.length} text=${JSON.stringify(text)}`);
   });
-  socket.on("end", () => log("end"));
-  socket.on("close", () => log("close"));
-  socket.on("error", (error) => log(`error ${error.message}`));
+  socket.on("end", () => log("입력 종료"));
+  socket.on("close", () => log("연결 종료"));
+  socket.on("error", (error) => log(`오류 ${error.message}`));
 });
 
 if (
@@ -29,6 +29,6 @@ if (
   import.meta.url === pathToFileURL(process.argv[1]).href
 ) {
   server.listen(port, "127.0.0.1", () => {
-    console.log(`message boundary server: 127.0.0.1:${port}`);
+    console.log(`메시지 경계 서버 시작: 127.0.0.1:${port}`);
   });
 }

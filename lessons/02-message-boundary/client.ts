@@ -6,7 +6,7 @@ const port = Number(process.env.PORT ?? 4002);
 const mode = process.argv.find((argument) => argument.startsWith("--mode="))?.slice(7) ?? "split";
 
 if (mode !== "split" && mode !== "combined") {
-  throw new Error("mode must be split or combined");
+  throw new Error("mode는 split 또는 combined이어야 합니다");
 }
 
 const socket = connect({ host: "127.0.0.1", port });
@@ -17,7 +17,7 @@ const log = (event: string): void => {
 };
 
 socket.on("connect", () => {
-  log(`connect mode=${mode}`);
+  log(`연결됨 mode=${mode}`);
   if (mode === "split") {
     socket.write("HEL");
     setTimeout(() => socket.end("LOWORLD"), 25);
@@ -30,6 +30,6 @@ socket.on("connect", () => {
   socket.uncork();
   socket.end();
 });
-socket.on("finish", () => log("finish"));
-socket.on("close", () => log("close"));
-socket.on("error", (error) => log(`error ${error.message}`));
+socket.on("finish", () => log("쓰기 완료"));
+socket.on("close", () => log("연결 종료"));
+socket.on("error", (error) => log(`오류 ${error.message}`));
